@@ -16,6 +16,7 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     const data = JSON.parse(e.postData.contents);
+    if (data.action === 'upload') return json_(uploadPhoto_(data));
     const stamp = new Date().toISOString();
     data.stamp = stamp;
     writeData_(data);
@@ -71,6 +72,31 @@ function writeReadableSheets_(data) {
   kh.getRange(1, 1, rows.length, 9).setValues(rows);
   kh.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#b91c1c').setFontColor('#ffffff');
   kh.setFrozenRows(1);
+}
+
+function uploadPhoto_(d) {
+  try {
+    const folder = getFolder_();
+    const parts = d.data.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), mime, d.name || 'gambar.jpg');
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return { id: file.getId() };
+  } catch (err) {
+    return { error: String(err) };
+  }
+}
+
+function getFolder_() {
+  const name = 'GAMBAR OPR SKKE1';
+  const it = DriveApp.getFoldersByName(name);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(name);
+}
+
+// Jalankan fungsi ini SEKALI dari editor untuk beri kebenaran Google Drive
+function setupKebenaran() {
+  getFolder_();
 }
 
 function json_(obj) {

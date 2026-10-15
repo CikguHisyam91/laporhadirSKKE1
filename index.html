@@ -103,6 +103,13 @@
         .print-only {
             display: none;
         }
+        @media print {
+            body.print-opr .print-only { display: none !important; }
+            body.print-opr #oprPrint { display: block !important; }
+        }
+        #oprPrint { font-family: Arial, Helvetica, sans-serif; color: #000; }
+        #oprPrint .box { border: 1px solid #000; padding: 4px 6px; font-size: 9.5pt; }
+        #oprPrint .lbl { font-weight: bold; font-size: 8.5pt; text-transform: uppercase; background: #fee2e2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
         /* Subtle animations */
         @keyframes pulseBorder {
@@ -175,6 +182,9 @@
                         </button>
                         <button onclick="switchMainTab('database')" id="tabBtn-database" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
                             <i class="fa-solid fa-users-gear"></i> Pangkalan Data IC (50)
+                        </button>
+                        <button onclick="switchMainTab('opr')" id="tabBtn-opr" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
+                            <i class="fa-solid fa-file-image"></i> OPR
                         </button>
                     </nav>
                 </div>
@@ -629,6 +639,48 @@
         </section>
 
         <!-- ========================================================================= -->
+        <!-- TAB 4: OPR (ONE PAGE REPORT) + GAMBAR                                     -->
+        <!-- ========================================================================= -->
+        <section id="view-opr" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow p-5 border-t-4 border-skkeRed-600">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-gray-900"><i class="fa-solid fa-file-image text-skkeRed-600"></i> One Page Report (OPR)</h2>
+                        <p class="text-xs text-gray-500">Pilih program, isi laporan & muat naik gambar. Disimpan automatik.</p>
+                    </div>
+                    <button onclick="printOPR()" class="px-4 py-2 bg-skkeRed-600 hover:bg-skkeRed-700 text-white font-bold text-sm rounded-xl shadow flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Cetak / Simpan PDF OPR
+                    </button>
+                </div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Program / Aktiviti</label>
+                <select id="oprProgSelect" onchange="oprSelectProgram(this.value)" class="w-full border rounded-lg px-3 py-2 text-sm mb-4"></select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="oprForm">
+                    <div><label class="text-xs font-bold text-gray-600">Tempat</label><input data-opr="tempat" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="text-xs font-bold text-gray-600">Masa</label><input data-opr="masa" placeholder="cth: 2.00 ptg - 4.00 ptg" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="text-xs font-bold text-gray-600">Anjuran / Unit</label><input data-opr="anjuran" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="text-xs font-bold text-gray-600">Sasaran / Penglibatan</label><input data-opr="sasaran" placeholder="Kosongkan: guna jumlah hadir automatik" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div class="md:col-span-2"><label class="text-xs font-bold text-gray-600">Objektif</label><textarea data-opr="objektif" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea></div>
+                    <div class="md:col-span-2"><label class="text-xs font-bold text-gray-600">Ringkasan Aktiviti / Laporan</label><textarea data-opr="ringkasan" rows="4" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea></div>
+                    <div><label class="text-xs font-bold text-gray-600">Kekuatan</label><textarea data-opr="kekuatan" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea></div>
+                    <div><label class="text-xs font-bold text-gray-600">Penambahbaikan</label><textarea data-opr="penambahbaikan" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea></div>
+                    <div><label class="text-xs font-bold text-gray-600">Disediakan oleh</label><input data-opr="disediakan" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="text-xs font-bold text-gray-600">Jawatan</label><input data-opr="jawatanPenyedia" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                </div>
+                <div class="mt-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-sm text-gray-800"><i class="fa-solid fa-images text-skkeRed-600"></i> Gambar Aktiviti (maks 6)</h3>
+                        <label class="px-3 py-2 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-2">
+                            <i class="fa-solid fa-camera"></i> Muat Naik / Ambil Gambar
+                            <input type="file" accept="image/*" multiple class="hidden" onchange="handleOprPhotos(event)">
+                        </label>
+                    </div>
+                    <div id="oprUploadStatus" class="text-xs text-skkeRed-700 font-semibold mb-2"></div>
+                    <div id="oprPhotoGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
         <!-- TAB 3: PANGKALAN DATA IC GURU & STAF (50 ORANG) + BACKUP                  -->
         <!-- ========================================================================= -->
         <section id="view-database" class="hidden space-y-6">
@@ -827,6 +879,9 @@
     <!-- ================================================================================= -->
     <!-- BAHAGIAN CETAKAN RASMI (PRINT-ONLY: MENGIKUT FORMAT BORANG KEHADIRAN SKKE1)        -->
     <!-- ================================================================================= -->
+    <!-- CETAKAN OPR -->
+    <div id="oprPrint" style="display:none"></div>
+
     <div class="print-only">
         <!-- Official School Letterhead -->
         <div class="border-b-2 border-black pb-3 mb-3">
@@ -1137,6 +1192,151 @@
             queueCloudSave();
         }
 
+
+        /*************************************************************************
+         * OPR (ONE PAGE REPORT) + GAMBAR (Google Drive)
+         *************************************************************************/
+        let oprProgId = null, oprSaveTimer = null;
+        const escH = t => String(t || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+        function getOprProgram() {
+            if (!oprProgId || !programsList.some(p => p.id === oprProgId)) oprProgId = activeProgramId;
+            const p = programsList.find(x => x.id === oprProgId);
+            if (p && !p.opr) p.opr = { photos: [] };
+            if (p && !p.opr.photos) p.opr.photos = [];
+            return p;
+        }
+
+        function oprSelectProgram(id) { oprProgId = id; renderOPR(true); }
+
+        function renderOPR(force) {
+            const sel = document.getElementById('oprProgSelect');
+            if (!sel) return;
+            const p = getOprProgram();
+            if (!p) return;
+            const editing = document.activeElement && document.activeElement.closest && document.activeElement.closest('#oprForm');
+            sel.innerHTML = programsList.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                .map(x => `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${escH(x.date)} - ${escH(x.title)}</option>`).join('');
+            if (!editing || force) {
+                document.querySelectorAll('#oprForm [data-opr]').forEach(el => {
+                    el.value = p.opr[el.dataset.opr] || '';
+                    el.oninput = () => {
+                        const cur = getOprProgram();
+                        cur.opr[el.dataset.opr] = el.value;
+                        clearTimeout(oprSaveTimer);
+                        oprSaveTimer = setTimeout(saveProgramsData, 1200);
+                    };
+                });
+            }
+            document.getElementById('oprPhotoGrid').innerHTML = p.opr.photos.length ? p.opr.photos.map((ph, i) => `
+                <div class="relative rounded-lg overflow-hidden border bg-gray-100 aspect-[4/3]">
+                    <img src="${ph.url}" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                    <button onclick="removeOprPhoto(${i})" class="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white w-7 h-7 rounded-full text-xs"><i class="fa-solid fa-trash"></i></button>
+                </div>`).join('') : '<p class="text-xs text-gray-400 col-span-full">Belum ada gambar.</p>';
+        }
+
+        function resizeImage(file, maxSize) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                        const c = document.createElement('canvas');
+                        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+                        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                        resolve(c.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.onerror = reject;
+                    img.src = reader.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleOprPhotos(event) {
+            const p = getOprProgram();
+            const files = Array.from(event.target.files || []);
+            event.target.value = '';
+            const status = document.getElementById('oprUploadStatus');
+            for (const f of files) {
+                if (p.opr.photos.length >= 6) { showToast('Maksimum 6 gambar bagi setiap OPR', 'error'); break; }
+                status.textContent = 'Memuat naik ' + f.name + ' ...';
+                try {
+                    if (cloudOn()) {
+                        const data = await resizeImage(f, 1280);
+                        const res = await fetch(SHEET_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'upload', name: (p.title || 'OPR') + ' - ' + f.name, data: data })
+                        });
+                        const j = await res.json();
+                        if (!j.id) throw new Error(j.error || 'Gagal');
+                        p.opr.photos.push({ id: j.id, url: 'https://drive.google.com/thumbnail?id=' + j.id + '&sz=w1000' });
+                    } else {
+                        p.opr.photos.push({ url: await resizeImage(f, 800) });
+                    }
+                    saveProgramsData();
+                    renderOPR();
+                } catch (e) {
+                    showToast('Gagal muat naik gambar: ' + e.message, 'error');
+                }
+            }
+            status.textContent = '';
+            if (files.length) showToast('Gambar disimpan', 'success');
+        }
+
+        function removeOprPhoto(i) {
+            if (!confirm('Padam gambar ini daripada OPR?')) return;
+            const p = getOprProgram();
+            p.opr.photos.splice(i, 1);
+            saveProgramsData();
+            renderOPR();
+        }
+
+        function printOPR() {
+            const p = getOprProgram();
+            if (!p) return;
+            const o = p.opr;
+            const hadir = Object.values(p.records || {}).filter(r => (r.status || 'HADIR') === 'HADIR').length;
+            const logo = document.getElementById('headerSchoolLogo').src;
+            const box = (l, v, extra) => `<div class="box ${extra || ''}"><div class="lbl">${l}</div><div style="white-space:pre-wrap">${escH(v) || '-'}</div></div>`;
+            const photos = o.photos.slice(0, 6);
+            const cols = photos.length <= 2 ? 2 : 3;
+            document.getElementById('oprPrint').innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;border-bottom:3px solid #b91c1c;padding-bottom:6px;margin-bottom:6px">
+                    <img src="${logo}" style="height:70px">
+                    <div style="flex:1;text-align:center">
+                        <div style="font-size:14pt;font-weight:800">SK KING EDWARD VII (1), TAIPING</div>
+                        <div style="font-size:11pt;font-weight:700;color:#b91c1c">ONE PAGE REPORT (OPR)</div>
+                    </div>
+                </div>
+                <div style="background:#111827;color:#fff;text-align:center;font-weight:800;font-size:12pt;padding:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${escH(p.title)}</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0">
+                    ${box('Tarikh', formatDateMalay(p.date))}${box('Masa', o.masa)}${box('Tempat', o.tempat)}${box('Anjuran', o.anjuran)}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr">
+                    ${box('Objektif', o.objektif)}${box('Sasaran / Penglibatan', o.sasaran || (hadir + ' orang guru & staf hadir'))}
+                </div>
+                ${box('Ringkasan Aktiviti', o.ringkasan)}
+                <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:4px;margin:6px 0">
+                    ${photos.map(ph => `<img src="${ph.url}" referrerpolicy="no-referrer" style="width:100%;height:${cols === 2 ? '68mm' : '48mm'};object-fit:cover;border:1px solid #000">`).join('')}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr">
+                    ${box('Kekuatan', o.kekuatan)}${box('Penambahbaikan', o.penambahbaikan)}
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:9.5pt">
+                    <div>Disediakan oleh:<br><br><br>.............................................<br><b>${escH(o.disediakan)}</b><br>${escH(o.jawatanPenyedia)}</div>
+                    <div>Disahkan oleh:<br><br><br>.............................................<br><b>Guru Besar</b><br>SK King Edward VII (1)</div>
+                </div>`;
+            document.body.classList.add('print-opr');
+            const imgs = Array.from(document.querySelectorAll('#oprPrint img'));
+            Promise.all(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 8000); })))
+                .then(() => { window.print(); });
+        }
+        window.addEventListener('afterprint', () => document.body.classList.remove('print-opr'));
+
         /*************************************************************************
          * GOOGLE SHEET SYNC (Google Apps Script Web App)
          * Tampal URL Web App anda di bawah (berakhir dengan /exec)
@@ -1310,7 +1510,7 @@
          * 5. NAVIGATION & UI RENDERING
          *************************************************************************/
         function switchMainTab(tabName) {
-            const tabs = ['kiosk', 'admin', 'database'];
+            const tabs = ['kiosk', 'admin', 'database', 'opr'];
             tabs.forEach(t => {
                 const view = document.getElementById(`view-${t}`);
                 const btn = document.getElementById(`tabBtn-${t}`);
@@ -1332,6 +1532,7 @@
             renderAdminAttendanceTable();
             renderDatabaseTable();
             renderOfficialPrintSheet();
+            renderOPR();
         }
 
         function renderActiveProgramBanner() {
