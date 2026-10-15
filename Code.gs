@@ -7,14 +7,17 @@
 const CHUNK = 45000;
 
 function doGet() {
-  const props = readData_();
-  return json_(props);
+  try {
+    return json_(readData_());
+  } catch (err) {
+    return json_({ error: String(err) });
+  }
 }
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
   try {
+    lock.waitLock(20000);
     const data = JSON.parse(e.postData.contents);
     if (data.action === 'upload') return json_(uploadPhoto_(data));
     const stamp = new Date().toISOString();
@@ -22,13 +25,29 @@ function doPost(e) {
     writeData_(data);
     writeReadableSheets_(data);
     return json_({ ok: true, stamp: stamp });
+  } catch (err) {
+    return json_({ ok: false, error: String(err) });
   } finally {
     lock.releaseLock();
   }
 }
 
+// Berfungsi sama ada skrip dibuat dari Google Sheet (Sambungan > Apps Script)
+// atau terus di script.google.com (Sheet baharu akan dicipta secara automatik).
+function ss_() {
+  let ss = null;
+  try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (err) {}
+  if (ss) return ss;
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('SHEET_ID');
+  if (id) return SpreadsheetApp.openById(id);
+  ss = SpreadsheetApp.create('Kehadiran Guru SKKE1');
+  props.setProperty('SHEET_ID', ss.getId());
+  return ss;
+}
+
 function sheet_(name) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = ss_();
   return ss.getSheetByName(name) || ss.insertSheet(name);
 }
 
@@ -97,6 +116,7 @@ function getFolder_() {
 // Jalankan fungsi ini SEKALI dari editor untuk beri kebenaran Google Drive
 function setupKebenaran() {
   getFolder_();
+  Logger.log('Google Sheet data: ' + ss_().getUrl());
 }
 
 function json_(obj) {

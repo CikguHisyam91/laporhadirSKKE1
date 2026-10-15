@@ -124,6 +124,7 @@
 <body class="min-h-screen flex flex-col text-gray-800">
 
     <!-- ======================== TOAST NOTIFICATION CONTAINER ======================== -->
+    <div id="syncBadge" class="no-print" style="position:fixed;bottom:10px;left:10px;z-index:60;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#6b7280">Menyambung...</div>
     <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-md w-full px-4 pointer-events-none no-print"></div>
 
     <!-- ======================== TOP OFFICIAL HEADER (NO-PRINT) ======================== -->
@@ -1114,7 +1115,9 @@
          *************************************************************************/
         window.addEventListener('DOMContentLoaded', () => {
             loadCustomLogoIfSaved();
+            const wasDirty = localStorage.getItem('skke1_dirty');
             loadAllData();
+            localStorage.setItem('skke1_dirty', wasDirty || '0');
             startLiveClock();
             renderAllViews();
             pullFromCloud(true);
@@ -1223,6 +1226,7 @@
                     el.oninput = () => {
                         const cur = getOprProgram();
                         cur.opr[el.dataset.opr] = el.value;
+                        cur.opr.updatedAt = Date.now();
                         clearTimeout(oprSaveTimer);
                         oprSaveTimer = setTimeout(saveProgramsData, 1200);
                     };
@@ -1273,6 +1277,7 @@
                         });
                         const j = await res.json();
                         if (!j.id) throw new Error(j.error || 'Gagal');
+                        p.opr.updatedAt = Date.now();
                         p.opr.photos.push({ id: j.id, url: 'https://drive.google.com/thumbnail?id=' + j.id + '&sz=w1000' });
                     } else {
                         p.opr.photos.push({ url: await resizeImage(f, 800) });
@@ -1291,6 +1296,7 @@
             if (!confirm('Padam gambar ini daripada OPR?')) return;
             const p = getOprProgram();
             p.opr.photos.splice(i, 1);
+            p.opr.updatedAt = Date.now();
             saveProgramsData();
             renderOPR();
         }
@@ -1345,45 +1351,107 @@
         const cloudOn = () => SHEET_URL.startsWith('https://');
         let cloudTimer = null, lastCloudStamp = '', cloudReady = false;
 
+        let pushing = false;
         function queueCloudSave() {
-            if (!cloudOn() || !cloudReady) return;
+            if (!cloudOn()) return;
+            localStorage.setItem('skke1_dirty', '1');
+            if (!cloudReady) return;
             clearTimeout(cloudTimer);
-            cloudTimer = setTimeout(pushToCloud, 800);
+            cloudTimer = setTimeout(() => { cloudTimer = null; pushToCloud(); }, 800);
+        }
+
+        let deletedProgIds = [];
+        try { deletedProgIds = JSON.parse(localStorage.getItem('skke1_deleted_progs') || '[]'); } catch (e) {}
+
+        // Gabung data terkini di Google Sheet dengan data peranti ini supaya
+        // kehadiran yang direkod serentak di peranti lain tidak hilang.
+        function mergeRemote(remote) {
+            const dels = new Set([...(remote.deletedIds || []), ...deletedProgIds]);
+            deletedProgIds = Array.from(dels).slice(-200);
+            localStorage.setItem('skke1_deleted_progs', JSON.stringify(deletedProgIds));
+            const ids = new Set(staffList.map(x => x.id));
+            (remote.staff || []).forEach(x => { if (!ids.has(x.id)) staffList.push(x); });
+            const byId = {};
+            programsList.forEach(x => byId[x.id] = x);
+            (remote.programs || []).forEach(r => {
+                const l = byId[r.id];
+                if (!l) { programsList.push(r); return; }
+                l.records = Object.assign({}, r.records || {}, l.records || {});
+                if (r.opr && (!l.opr || (r.opr.updatedAt || 0) > (l.opr.updatedAt || 0))) l.opr = r.opr;
+            });
+            programsList = programsList.filter(x => !dels.has(x.id));
+            if (!programsList.length && remote.programs && remote.programs.length) programsList = remote.programs;
+            if (!programsList.some(x => x.id === activeProgramId) && programsList.length) activeProgramId = programsList[0].id;
+            if (remote.stamp) lastCloudStamp = remote.stamp;
+        }
+
+        function setSyncBadge(text, color) {
+            const el = document.getElementById('syncBadge');
+            if (el) { el.textContent = text; el.style.background = color; }
         }
 
         async function pushToCloud() {
+            if (pushing) { queueCloudSave(); return; }
+            pushing = true;
+            setSyncBadge('Menyimpan...', '#d97706');
             try {
+                try {
+                    const cur = await (await fetch(SHEET_URL + '?t=' + Date.now())).json();
+                    if (cur && cur.programs) mergeRemote(cur);
+                } catch (e) {}
+                localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffList));
+                localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(programsList));
                 const res = await fetch(SHEET_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ staff: staffList, programs: programsList, activeId: activeProgramId })
+                    body: JSON.stringify({ staff: staffList, programs: programsList, activeId: activeProgramId, deletedIds: deletedProgIds })
                 });
                 const j = await res.json();
-                if (j.stamp) lastCloudStamp = j.stamp;
+                if (!j.ok) throw new Error(j.error || 'Ralat skrip');
+                lastCloudStamp = j.stamp;
+                localStorage.setItem('skke1_dirty', '0');
+                setSyncBadge('Tersimpan ✓ Google Sheet', '#059669');
+                renderAllViews();
             } catch (e) {
-                showToast('Gagal simpan ke Google Sheet. Semak internet.', 'error');
+                setSyncBadge('Gagal simpan - cuba lagi', '#dc2626');
+                showToast('Gagal simpan ke Google Sheet: ' + e.message, 'error');
             }
+            pushing = false;
         }
 
         async function pullFromCloud(first) {
             if (!cloudOn()) return;
+            if (!first && (cloudTimer || pushing)) return; // ada simpanan sedang dihantar
             try {
                 const res = await fetch(SHEET_URL + '?t=' + Date.now());
                 const j = await res.json();
-                if (j.stamp && j.stamp !== lastCloudStamp && j.programs) {
-                    lastCloudStamp = j.stamp;
-                    staffList = j.staff && j.staff.length ? j.staff : staffList;
-                    programsList = j.programs.length ? j.programs : programsList;
-                    if (j.activeId && programsList.some(p => p.id === j.activeId)) activeProgramId = j.activeId;
-                    localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffList));
-                    localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(programsList));
-                    localStorage.setItem(STORAGE_KEYS.ACTIVE_PROG_ID, activeProgramId);
-                    renderAllViews();
+                if (j.error) throw new Error(j.error);
+                if (j.stamp && j.programs && j.programs.length) {
+                    if (first && localStorage.getItem('skke1_dirty') === '1') {
+                        // peranti ini ada rekod yang belum sampai ke Sheet: gabung & hantar
+                        mergeRemote(j);
+                        cloudReady = true;
+                        pushToCloud();
+                    } else if (j.stamp !== lastCloudStamp) {
+                        if (!first && (cloudTimer || pushing)) return;
+                        staffList = j.staff && j.staff.length ? j.staff : staffList;
+                        programsList = j.programs;
+                        deletedProgIds = j.deletedIds || deletedProgIds;
+                        lastCloudStamp = j.stamp;
+                        if (first && j.activeId && programsList.some(p => p.id === j.activeId)) activeProgramId = j.activeId;
+                        if (!programsList.some(p => p.id === activeProgramId)) activeProgramId = programsList[0].id;
+                        localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffList));
+                        localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(programsList));
+                        localStorage.setItem(STORAGE_KEYS.ACTIVE_PROG_ID, activeProgramId);
+                        renderAllViews();
+                    }
+                } else if (first) {
+                    cloudReady = true;
+                    pushToCloud(); // Sheet masih kosong: hantar data awal
                 }
-                if (first && !j.stamp) { cloudReady = true; pushToCloud(); }
-                if (first) showToast('Disambung ke Google Sheet', 'success');
+                if (first) { showToast('Disambung ke Google Sheet', 'success'); setSyncBadge('Disambung ✓ Google Sheet', '#059669'); }
             } catch (e) {
-                if (first) showToast('Tidak dapat sambung ke Google Sheet. Guna data peranti.', 'error');
+                if (first) { showToast('Tidak dapat sambung ke Google Sheet: ' + e.message, 'error'); setSyncBadge('Luar talian', '#dc2626'); }
             }
             cloudReady = true;
         }
@@ -1912,6 +1980,8 @@
                 return;
             }
             programsList = programsList.filter(p => p.id !== progId);
+            deletedProgIds.push(progId);
+            localStorage.setItem('skke1_deleted_progs', JSON.stringify(deletedProgIds));
             if (activeProgramId === progId) {
                 activeProgramId = programsList[0].id;
             }
