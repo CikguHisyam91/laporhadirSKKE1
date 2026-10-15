@@ -1062,6 +1062,8 @@
             loadAllData();
             startLiveClock();
             renderAllViews();
+            pullFromCloud(true);
+            setInterval(() => { if (!document.hidden) pullFromCloud(false); }, 15000);
         });
 
         function getTodayISO() {
@@ -1124,6 +1126,7 @@
 
         function saveStaffData() {
             localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffList));
+            queueCloudSave();
         }
 
         function saveProgramsData() {
@@ -1131,6 +1134,58 @@
             if (activeProgramId) {
                 localStorage.setItem(STORAGE_KEYS.ACTIVE_PROG_ID, activeProgramId);
             }
+            queueCloudSave();
+        }
+
+        /*************************************************************************
+         * GOOGLE SHEET SYNC (Google Apps Script Web App)
+         * Tampal URL Web App anda di bawah (berakhir dengan /exec)
+         *************************************************************************/
+        const SHEET_URL = 'TAMPAL_URL_WEB_APP_DI_SINI';
+        const cloudOn = () => SHEET_URL.startsWith('https://');
+        let cloudTimer = null, lastCloudStamp = '', cloudReady = false;
+
+        function queueCloudSave() {
+            if (!cloudOn() || !cloudReady) return;
+            clearTimeout(cloudTimer);
+            cloudTimer = setTimeout(pushToCloud, 800);
+        }
+
+        async function pushToCloud() {
+            try {
+                const res = await fetch(SHEET_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ staff: staffList, programs: programsList, activeId: activeProgramId })
+                });
+                const j = await res.json();
+                if (j.stamp) lastCloudStamp = j.stamp;
+            } catch (e) {
+                showToast('Gagal simpan ke Google Sheet. Semak internet.', 'error');
+            }
+        }
+
+        async function pullFromCloud(first) {
+            if (!cloudOn()) return;
+            try {
+                const res = await fetch(SHEET_URL + '?t=' + Date.now());
+                const j = await res.json();
+                if (j.stamp && j.stamp !== lastCloudStamp && j.programs) {
+                    lastCloudStamp = j.stamp;
+                    staffList = j.staff && j.staff.length ? j.staff : staffList;
+                    programsList = j.programs.length ? j.programs : programsList;
+                    if (j.activeId && programsList.some(p => p.id === j.activeId)) activeProgramId = j.activeId;
+                    localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffList));
+                    localStorage.setItem(STORAGE_KEYS.PROGRAMS, JSON.stringify(programsList));
+                    localStorage.setItem(STORAGE_KEYS.ACTIVE_PROG_ID, activeProgramId);
+                    renderAllViews();
+                }
+                if (first && !j.stamp) { cloudReady = true; pushToCloud(); }
+                if (first) showToast('Disambung ke Google Sheet', 'success');
+            } catch (e) {
+                if (first) showToast('Tidak dapat sambung ke Google Sheet. Guna data peranti.', 'error');
+            }
+            cloudReady = true;
         }
 
         function getActiveProgram() {
