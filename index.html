@@ -9,7 +9,7 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts: Inter & Cinzel for Official Header -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -111,6 +111,55 @@
         #oprPrint .box { border: 1px solid #000; padding: 4px 6px; font-size: 9.5pt; }
         #oprPrint .lbl { font-weight: bold; font-size: 8.5pt; text-transform: uppercase; background: #fee2e2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
+        /* ===== SIJIL KEHADIRAN PREMIUM ===== */
+        @media print {
+            body.print-sijil .print-only, body.print-sijil #oprPrint { display: none !important; }
+            body.print-sijil #sijilPrint { display: block !important; }
+            body.print-sijil .cert { page: sijil; break-after: page; margin: 0 !important; box-shadow: none !important; }
+            body.print-sijil .cert:last-child { break-after: auto; }
+        }
+        @page sijil { size: A4 landscape; margin: 0; }
+        .cert { width: 297mm; height: 210mm; position: relative; overflow: hidden; box-sizing: border-box;
+            background: radial-gradient(ellipse at center, #fffdf6 0%, #fbf3dd 60%, #f1e2b8 100%);
+            font-family: 'Cormorant Garamond', Georgia, serif; color: #1a1a1a;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .cert .band { position: absolute; inset: 0; border: 9mm solid #0d0d0d; }
+        .cert .band::after { content: ''; position: absolute; inset: 0; border: 1.6mm solid #9b1c1c; }
+        .cert .gold1 { position: absolute; inset: 12mm; border: 1.2mm solid #b8912f; }
+        .cert .gold2 { position: absolute; inset: 14.5mm; border: .35mm solid #b8912f; }
+        .cert .gold2::before { content: ''; position: absolute; inset: 1.5mm; border: .35mm dashed rgba(155,28,28,.45); }
+        .cert .corner { position: absolute; width: 30mm; height: 30mm; }
+        .cert .corner svg { width: 100%; height: 100%; }
+        .cert .c-tl { top: 10mm; left: 10mm; } .cert .c-tr { top: 10mm; right: 10mm; transform: scaleX(-1); }
+        .cert .c-bl { bottom: 10mm; left: 10mm; transform: scaleY(-1); } .cert .c-br { bottom: 10mm; right: 10mm; transform: scale(-1,-1); }
+        .cert .wm { position: absolute; left: 50%; top: 52%; width: 120mm; transform: translate(-50%,-50%); opacity: .06; }
+        .cert .body { position: absolute; inset: 20mm 28mm; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .cert .logo { height: 28mm; filter: drop-shadow(0 1mm 1.2mm rgba(0,0,0,.35)); }
+        .cert .school { font-family: 'Cinzel', serif; font-weight: 800; font-size: 13pt; letter-spacing: .35em; color: #0d0d0d; margin-top: 2mm; }
+        .cert .motto { font-style: italic; font-size: 10pt; color: #9b1c1c; letter-spacing: .2em; }
+        .cert .title { font-family: 'Cinzel', serif; font-weight: 900; font-size: 30pt; letter-spacing: .12em; margin-top: 2mm; line-height: 1;
+            background: linear-gradient(180deg, #e9cf7a 0%, #b8912f 45%, #7a5a12 55%, #d9b95a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .cert .sub { font-family: 'Cinzel', serif; font-weight: 700; font-size: 12pt; letter-spacing: .5em; color: #9b1c1c; margin-top: 1.5mm; }
+        .cert .rule { display: flex; align-items: center; gap: 3mm; margin: 1.5mm 0; color: #b8912f; }
+        .cert .rule span { display: block; width: 45mm; height: .4mm; background: linear-gradient(90deg, transparent, #b8912f, transparent); }
+        .cert .txt { font-size: 14pt; font-style: italic; color: #333; }
+        .cert .name { font-family: 'Great Vibes', cursive; font-size: 42pt; color: #0d0d0d; line-height: 1.15; margin-top: 1mm; padding: 0 10mm; border-bottom: .4mm solid #b8912f; min-width: 150mm; white-space: nowrap; }
+        .cert .role { font-family: 'Cinzel', serif; font-size: 10pt; font-weight: 700; letter-spacing: .25em; color: #9b1c1c; margin-top: 1.5mm; }
+        .cert .prog { font-family: 'Cinzel', serif; font-weight: 800; font-size: 16pt; color: #0d0d0d; margin-top: 1mm; max-width: 220mm; line-height: 1.25; }
+        .cert .date { font-size: 13pt; font-weight: 600; color: #333; margin-top: 1mm; }
+        .cert .foot { position: absolute; left: 34mm; right: 34mm; bottom: 22mm; display: flex; justify-content: space-between; align-items: flex-end; }
+        .cert .sign { width: 70mm; text-align: center; font-size: 11pt; }
+        .cert .sign .ln { border-top: .35mm solid #0d0d0d; padding-top: 1.5mm; font-family: 'Cinzel', serif; font-weight: 800; font-size: 10.5pt; }
+        .cert .seal { width: 28mm; height: 28mm; border-radius: 50%; position: relative; margin-bottom: 2mm;
+            background: radial-gradient(circle at 35% 30%, #f6e39c, #c9a13c 45%, #7a5a12 100%);
+            box-shadow: 0 0 0 1.2mm #9b1c1c, 0 0 0 1.8mm #b8912f, 0 1.5mm 3mm rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+        .cert .seal div { width: 21mm; height: 21mm; border-radius: 50%; border: .4mm dashed #5a420c; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-weight: 900; color: #3d2c06; font-size: 7pt; letter-spacing: .1em; line-height: 1.2; }
+        .cert .seal b { font-size: 13pt; }
+        .cert .serial { position: absolute; bottom: 16.5mm; left: 0; right: 0; text-align: center; font-family: 'Cinzel', serif; font-size: 7.5pt; letter-spacing: .3em; color: #7a5a12; }
+        #sijilPreviewWrap { overflow: hidden; }
+        #sijilPreviewWrap .cert { transform-origin: top left; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+
         /* Subtle animations */
         @keyframes pulseBorder {
             0%, 100% { border-color: rgba(220, 38, 38, 0.7); }
@@ -186,6 +235,9 @@
                         </button>
                         <button onclick="switchMainTab('opr')" id="tabBtn-opr" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
                             <i class="fa-solid fa-file-image"></i> OPR
+                        </button>
+                        <button onclick="switchMainTab('sijil')" id="tabBtn-sijil" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
+                            <i class="fa-solid fa-award"></i> Sijil
                         </button>
                     </nav>
                 </div>
@@ -681,6 +733,31 @@
             </div>
         </section>
 
+        <!-- TAB: JANAAN SIJIL KEHADIRAN PREMIUM -->
+        <section id="view-sijil" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow p-5 border-t-4 border-amber-500">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-gray-900"><i class="fa-solid fa-award text-amber-500"></i> Janaan Sijil Kehadiran</h2>
+                        <p class="text-xs text-gray-500">Sijil dijana untuk guru & staf yang berstatus HADIR. Cetak terus atau "Simpan sebagai PDF".</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="printSijil(false)" class="px-4 py-2 bg-skkeBlack-900 hover:bg-black text-white font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-print"></i> Cetak Sijil Ini</button>
+                        <button onclick="printSijil(true)" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-layer-group"></i> Cetak Semua Yang Hadir (<span id="sijilCount">0</span>)</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div><label class="text-xs font-bold text-gray-600">Program / Aktiviti</label><select id="sijilProgSelect" onchange="sijilProgId=this.value;renderSijil()" class="w-full border rounded-lg px-3 py-2 text-sm"></select></div>
+                    <div><label class="text-xs font-bold text-gray-600">Penerima (yang hadir)</label><select id="sijilStaffSelect" onchange="renderSijil()" class="w-full border rounded-lg px-3 py-2 text-sm"></select></div>
+                    <div><label class="text-xs font-bold text-gray-600">Nama Penandatangan (Guru Besar)</label><input id="sijilSigner" oninput="saveSijilSettings()" placeholder="cth: NAMA GURU BESAR" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="text-xs font-bold text-gray-600">Jawatan Penandatangan</label><input id="sijilSignerRole" oninput="saveSijilSettings()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                    <div class="md:col-span-2"><label class="text-xs font-bold text-gray-600">Ayat Penghargaan</label><input id="sijilPhrase" oninput="saveSijilSettings()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                </div>
+                <div id="sijilPreviewWrap" class="rounded-xl bg-gray-800 p-3"><div id="sijilPreview"></div></div>
+            </div>
+        </section>
+
+
         <!-- ========================================================================= -->
         <!-- TAB 3: PANGKALAN DATA IC GURU & STAF (50 ORANG) + BACKUP                  -->
         <!-- ========================================================================= -->
@@ -882,6 +959,7 @@
     <!-- ================================================================================= -->
     <!-- CETAKAN OPR -->
     <div id="oprPrint" style="display:none"></div>
+    <div id="sijilPrint" style="display:none"></div>
 
     <div class="print-only">
         <!-- Official School Letterhead -->
@@ -1299,6 +1377,7 @@
             p.opr.updatedAt = Date.now();
             saveProgramsData();
             renderOPR();
+            renderSijil();
         }
 
         function printOPR() {
@@ -1342,6 +1421,104 @@
                 .then(() => { window.print(); });
         }
         window.addEventListener('afterprint', () => document.body.classList.remove('print-opr'));
+
+        /*************************************************************************
+         * JANAAN SIJIL KEHADIRAN PREMIUM
+         *************************************************************************/
+        let sijilProgId = null;
+        const SIJIL_KEY = 'skke1_sijil_settings_v1';
+        const SIJIL_DEFAULT = { signer: '', role: 'Guru Besar, SK King Edward VII (1)', phrase: 'Dengan penuh penghargaan, sijil ini dianugerahkan kepada' };
+        function getSijilSettings() {
+            try { return Object.assign({}, SIJIL_DEFAULT, JSON.parse(localStorage.getItem(SIJIL_KEY) || '{}')); } catch (e) { return Object.assign({}, SIJIL_DEFAULT); }
+        }
+        function saveSijilSettings() {
+            localStorage.setItem(SIJIL_KEY, JSON.stringify({
+                signer: document.getElementById('sijilSigner').value,
+                role: document.getElementById('sijilSignerRole').value,
+                phrase: document.getElementById('sijilPhrase').value
+            }));
+            renderSijil();
+        }
+        function sijilPresent(p) {
+            return staffList.filter(s => p.records && p.records[s.id] && (p.records[s.id].status || 'HADIR') === 'HADIR');
+        }
+        const SIJIL_CORNER = `<svg viewBox="0 0 100 100"><path d="M4 4 H60 M4 4 V60" stroke="#b8912f" stroke-width="3" fill="none"/><path d="M12 12 H44 M12 12 V44" stroke="#9b1c1c" stroke-width="1.5" fill="none"/><path d="M4 4 Q30 10 34 34 Q10 30 4 4Z" fill="#b8912f"/><circle cx="34" cy="34" r="5" fill="#9b1c1c" stroke="#b8912f" stroke-width="2"/><path d="M40 14 q8 2 10 10 M14 40 q2 8 10 10" stroke="#b8912f" stroke-width="2" fill="none"/></svg>`;
+        function sijilHTML(p, s, idx) {
+            const st = getSijilSettings();
+            const logo = document.getElementById('headerSchoolLogo').src;
+            const pIdx = programsList.indexOf(p) + 1;
+            const year = (p.date || '').slice(0, 4) || new Date().getFullYear();
+            const serial = `SKKE1/SIJIL/${year}/${String(pIdx).padStart(3, '0')}/${String(s.bil || idx + 1).padStart(3, '0')}`;
+            const corners = ['tl', 'tr', 'bl', 'br'].map(c => `<div class="corner c-${c}">${SIJIL_CORNER}</div>`).join('');
+            return `<div class="cert">
+                <div class="band"></div><div class="gold1"></div><div class="gold2"></div>${corners}
+                <img class="wm" src="${logo}" alt="">
+                <div class="body">
+                    <img class="logo" src="${logo}" alt="Logo">
+                    <div class="school">SK KING EDWARD VII (1) · TAIPING</div>
+                    <div class="motto">~ Magni Nominis Umbra ~</div>
+                    <div class="title">SIJIL KEHADIRAN</div>
+                    <div class="sub">CERTIFICATE OF ATTENDANCE</div>
+                    <div class="rule"><span></span>❖<span></span></div>
+                    <div class="txt">${escH(st.phrase)}</div>
+                    <div class="name" style="font-size:${s.name.length > 34 ? 26 : s.name.length > 26 ? 32 : 40}pt">${escH(s.name)}</div>
+                    <div class="role">${escH(s.role)}</div>
+                    <div class="txt" style="margin-top:2mm">atas kehadiran dan penyertaan dalam</div>
+                    <div class="prog">${escH(p.title)}</div>
+                    <div class="date">pada ${escH(formatDateMalay(p.date))}</div>
+                </div>
+                <div class="foot">
+                    <div class="sign"><div style="height:14mm"></div><div class="ln">${escH(st.signer) || '................................'}</div><div>${escH(st.role)}</div></div>
+                    <div class="seal"><div><span>SKKE1</span><b>★</b><span>${escH(String(year))}</span></div></div>
+                    <div class="sign"><div style="height:14mm;display:flex;align-items:flex-end;justify-content:center;font-size:12pt;font-weight:600">${escH(formatDateMalay(p.date))}</div><div class="ln">TARIKH</div><div>Taiping, Perak</div></div>
+                </div>
+                <div class="serial">NO. SIJIL: ${serial}</div>
+            </div>`;
+        }
+        function renderSijil() {
+            const sel = document.getElementById('sijilProgSelect');
+            if (!sel) return;
+            if (!programsList.length) { sel.innerHTML = ''; document.getElementById('sijilPreview').innerHTML = '<p class="text-white text-sm p-4">Tiada program.</p>'; return; }
+            if (!sijilProgId || !programsList.find(x => x.id === sijilProgId)) sijilProgId = activeProgramId || programsList[0].id;
+            const p = programsList.find(x => x.id === sijilProgId);
+            sel.innerHTML = programsList.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                .map(x => `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${escH(x.date)} - ${escH(x.title)}</option>`).join('');
+            const st = getSijilSettings();
+            [['sijilSigner', 'signer'], ['sijilSignerRole', 'role'], ['sijilPhrase', 'phrase']].forEach(([id, k]) => {
+                const el = document.getElementById(id); if (document.activeElement !== el) el.value = st[k];
+            });
+            const present = sijilPresent(p);
+            document.getElementById('sijilCount').textContent = present.length;
+            const ss = document.getElementById('sijilStaffSelect');
+            const prev = ss.value;
+            ss.innerHTML = present.map(s => `<option value="${s.id}">${escH(s.bil + '. ' + s.name)}</option>`).join('') || '<option value="">(Belum ada yang hadir)</option>';
+            if (present.find(s => s.id === prev)) ss.value = prev;
+            const who = present.find(s => s.id === ss.value);
+            const sample = who || { name: 'NAMA PENERIMA', role: 'JAWATAN', bil: 0 };
+            const wrap = document.getElementById('sijilPreviewWrap');
+            const box = document.getElementById('sijilPreview');
+            box.innerHTML = sijilHTML(p, sample, 0);
+            const cert = box.firstElementChild;
+            const scale = Math.min(1, (wrap.clientWidth - 24) / cert.offsetWidth || 1);
+            cert.style.transform = `scale(${scale})`;
+            box.style.height = (cert.offsetHeight * scale) + 'px';
+        }
+        window.addEventListener('resize', () => { if (!document.getElementById('view-sijil').classList.contains('hidden')) renderSijil(); });
+        function printSijil(all) {
+            const p = programsList.find(x => x.id === sijilProgId);
+            if (!p) return;
+            const present = sijilPresent(p);
+            const list = all ? present : present.filter(s => s.id === document.getElementById('sijilStaffSelect').value);
+            if (!list.length) { showToast('Tiada guru/staf yang hadir untuk dijana sijil.', 'error'); return; }
+            document.getElementById('sijilPrint').innerHTML = list.map((s, i) => sijilHTML(p, s, i)).join('');
+            document.body.classList.add('print-sijil');
+            const imgs = Array.from(document.querySelectorAll('#sijilPrint img'));
+            const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+            Promise.all([fontsReady].concat(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 8000); }))))
+                .then(() => { window.print(); });
+        }
+        window.addEventListener('afterprint', () => { document.body.classList.remove('print-sijil'); document.getElementById('sijilPrint').innerHTML = ''; });
+
 
         /*************************************************************************
          * GOOGLE SHEET SYNC (Google Apps Script Web App)
@@ -1578,7 +1755,7 @@
          * 5. NAVIGATION & UI RENDERING
          *************************************************************************/
         function switchMainTab(tabName) {
-            const tabs = ['kiosk', 'admin', 'database', 'opr'];
+            const tabs = ['kiosk', 'admin', 'database', 'opr', 'sijil'];
             tabs.forEach(t => {
                 const view = document.getElementById(`view-${t}`);
                 const btn = document.getElementById(`tabBtn-${t}`);

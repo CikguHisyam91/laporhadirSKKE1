@@ -11,3 +11,6 @@
 7. Dalam fail `index.html`, cari `TAMPAL_URL_WEB_APP_DI_SINI` dan gantikan dengan URL tadi. Simpan.
 
 Siap! Semua peranti akan berkongsi data yang sama. Tab **KEHADIRAN** dan **STAF** dalam Google Sheet boleh dibaca terus.
+
+## Sijil Kehadiran
+Tab **Sijil**: pilih program, pilih penerima (hanya yang HADIR), isi nama Guru Besar sekali sahaja (diingati). Klik **Cetak Sijil Ini** atau **Cetak Semua Yang Hadir**. Dalam tetingkap cetak pilih **Simpan sebagai PDF** dan tandakan **Background graphics**.
