@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
+    <meta name="color-scheme" content="only light">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Kehadiran Guru & Staf - SK King Edward VII (1) Taiping</title>
@@ -121,6 +122,8 @@
             body.print-sijil .cert:last-child { break-after: auto; }
         }
         @page sijil { size: A4 landscape; margin: 0; }
+        :root { color-scheme: only light; }
+        .cert, .cert * { forced-color-adjust: none; }
         .cert { width: 297mm; height: 210mm; position: relative; overflow: hidden; box-sizing: border-box;
             background: #fdf8ea;
             font-family: 'Cormorant Garamond', Georgia, serif; color: #1a1a1a;
