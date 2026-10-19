@@ -6,6 +6,8 @@
     <title>Sistem Kehadiran Guru & Staf - SK King Edward VII (1) Taiping</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts: Inter & Cinzel for Official Header -->
@@ -123,8 +125,9 @@
             background: radial-gradient(ellipse at center, #fffdf6 0%, #fbf3dd 60%, #f1e2b8 100%);
             font-family: 'Cormorant Garamond', Georgia, serif; color: #1a1a1a;
             -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .cert .band { position: absolute; inset: 0; border: 9mm solid #0d0d0d; }
-        .cert .band::after { content: ''; position: absolute; inset: 0; border: 1.6mm solid #9b1c1c; }
+        .cert .band { position: absolute; inset: 0; border: 9mm solid #f4e7c3; }
+        .cert .band::before { content: ''; position: absolute; inset: 0; border: .6mm solid #b8912f; }
+        .cert .band::after { content: ''; position: absolute; inset: -.2mm; border: 1mm solid #9b1c1c; }
         .cert .gold1 { position: absolute; inset: 12mm; border: 1.2mm solid #b8912f; }
         .cert .gold2 { position: absolute; inset: 14.5mm; border: .35mm solid #b8912f; }
         .cert .gold2::before { content: ''; position: absolute; inset: 1.5mm; border: .35mm dashed rgba(155,28,28,.45); }
@@ -158,6 +161,10 @@
         .cert .seal b { font-size: 13pt; }
         .cert .serial { position: absolute; bottom: 16.5mm; left: 0; right: 0; text-align: center; font-family: 'Cinzel', serif; font-size: 7.5pt; letter-spacing: .3em; color: #7a5a12; }
         #sijilPreviewWrap { overflow: hidden; }
+        .cert.exporting { background: #fdf8ea; }
+        .cert.exporting .title { background: none; color: #9a7417; }
+        .cert.exporting .rule span { background: #b8912f; }
+        .cert.exporting .seal { background: #d4ad4a; }
         #sijilPreviewWrap .cert { transform-origin: top left; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 
         /* Subtle animations */
@@ -744,6 +751,9 @@
                     <div class="flex flex-wrap gap-2">
                         <button onclick="printSijil(false)" class="px-4 py-2 bg-skkeBlack-900 hover:bg-black text-white font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-print"></i> Cetak Sijil Ini</button>
                         <button onclick="printSijil(true)" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-layer-group"></i> Cetak Semua Yang Hadir (<span id="sijilCount">0</span>)</button>
+                        <button onclick="downloadSijil('pdf', false)" class="px-4 py-2 bg-skkeRed-600 hover:bg-skkeRed-700 text-white font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Muat Turun PDF</button>
+                        <button onclick="downloadSijil('png', false)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-file-image"></i> Muat Turun PNG</button>
+                        <button onclick="downloadSijil('pdf', true)" class="px-4 py-2 bg-white border-2 border-skkeRed-600 text-skkeRed-700 font-bold text-sm rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-file-zipper"></i> PDF Semua Yang Hadir</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -751,7 +761,7 @@
                     <div><label class="text-xs font-bold text-gray-600">Penerima (yang hadir)</label><select id="sijilStaffSelect" onchange="renderSijil()" class="w-full border rounded-lg px-3 py-2 text-sm"></select></div>
                     <div class="md:col-span-2"><label class="text-xs font-bold text-gray-600">Ayat Penghargaan</label><input id="sijilPhrase" oninput="saveSijilSettings()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                 </div>
-                <div id="sijilPreviewWrap" class="rounded-xl bg-gray-800 p-3"><div id="sijilPreview"></div></div>
+                <div id="sijilPreviewWrap" class="rounded-xl bg-stone-100 border border-stone-200 p-3"><div id="sijilPreview"></div></div>
             </div>
         </section>
 
@@ -1509,6 +1519,46 @@
             box.style.height = (cert.offsetHeight * scale) + 'px';
         }
         window.addEventListener('resize', () => { if (!document.getElementById('view-sijil').classList.contains('hidden')) renderSijil(); });
+        async function downloadSijil(type, all) {
+            const p = programsList.find(x => x.id === sijilProgId);
+            if (!p) return;
+            if (!window.html2canvas || !window.jspdf) { showToast('Sila sambung internet untuk muat turun sijil.', 'error'); return; }
+            const present = sijilPresent(p);
+            const list = all ? present : present.filter(s => s.id === document.getElementById('sijilStaffSelect').value);
+            if (!list.length) { showToast('Tiada guru/staf yang hadir untuk dijana sijil.', 'error'); return; }
+            showToast('Sedang menjana sijil, sila tunggu...', 'info');
+            const stage = document.createElement('div');
+            stage.style.cssText = 'position:fixed;left:-10000px;top:0;';
+            document.body.appendChild(stage);
+            const fileName = t => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
+            try {
+                if (document.fonts) await document.fonts.ready;
+                const pdf = type === 'pdf' ? new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }) : null;
+                for (let i = 0; i < list.length; i++) {
+                    stage.innerHTML = sijilHTML(p, list[i], i);
+                    const cert = stage.firstElementChild;
+                    cert.classList.add('exporting');
+                    await Promise.all(Array.from(cert.querySelectorAll('img')).map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
+                    fitSijilNames(stage);
+                    const canvas = await html2canvas(cert, { scale: 3, useCORS: true, backgroundColor: '#fffdf6' });
+                    if (pdf) {
+                        if (i > 0) pdf.addPage();
+                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 297, 210);
+                    } else {
+                        const a = document.createElement('a');
+                        a.href = canvas.toDataURL('image/png');
+                        a.download = `Sijil_${fileName(list[i].name)}.png`;
+                        a.click();
+                    }
+                }
+                if (pdf) pdf.save(all ? `Sijil_Semua_${fileName(p.title)}.pdf` : `Sijil_${fileName(list[0].name)}.pdf`);
+                showToast('Sijil berjaya dimuat turun.', 'success');
+            } catch (e) {
+                showToast('Gagal menjana sijil: ' + e.message, 'error');
+            } finally {
+                stage.remove();
+            }
+        }
         function printSijil(all) {
             const p = programsList.find(x => x.id === sijilProgId);
             if (!p) return;
