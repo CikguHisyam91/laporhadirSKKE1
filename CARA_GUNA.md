@@ -13,4 +13,4 @@
 Siap! Semua peranti akan berkongsi data yang sama. Tab **KEHADIRAN** dan **STAF** dalam Google Sheet boleh dibaca terus.
 
 ## Sijil Kehadiran
-Tab **Sijil**: pilih program, pilih penerima (hanya yang HADIR), isi nama Guru Besar sekali sahaja (diingati). Klik **Cetak Sijil Ini** atau **Cetak Semua Yang Hadir**. Dalam tetingkap cetak pilih **Simpan sebagai PDF** dan tandakan **Background graphics**.
+Tab **Sijil**: pilih program, pilih penerima (hanya yang HADIR), sijil digital tanpa tandatangan. Klik **Cetak Sijil Ini** atau **Cetak Semua Yang Hadir**. Dalam tetingkap cetak pilih **Simpan sebagai PDF** dan tandakan **Background graphics**.

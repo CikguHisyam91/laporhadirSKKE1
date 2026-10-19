@@ -749,8 +749,6 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div><label class="text-xs font-bold text-gray-600">Program / Aktiviti</label><select id="sijilProgSelect" onchange="sijilProgId=this.value;renderSijil()" class="w-full border rounded-lg px-3 py-2 text-sm"></select></div>
                     <div><label class="text-xs font-bold text-gray-600">Penerima (yang hadir)</label><select id="sijilStaffSelect" onchange="renderSijil()" class="w-full border rounded-lg px-3 py-2 text-sm"></select></div>
-                    <div><label class="text-xs font-bold text-gray-600">Nama Penandatangan (Guru Besar)</label><input id="sijilSigner" oninput="saveSijilSettings()" placeholder="cth: NAMA GURU BESAR" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                    <div><label class="text-xs font-bold text-gray-600">Jawatan Penandatangan</label><input id="sijilSignerRole" oninput="saveSijilSettings()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                     <div class="md:col-span-2"><label class="text-xs font-bold text-gray-600">Ayat Penghargaan</label><input id="sijilPhrase" oninput="saveSijilSettings()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                 </div>
                 <div id="sijilPreviewWrap" class="rounded-xl bg-gray-800 p-3"><div id="sijilPreview"></div></div>
@@ -1427,14 +1425,12 @@
          *************************************************************************/
         let sijilProgId = null;
         const SIJIL_KEY = 'skke1_sijil_settings_v1';
-        const SIJIL_DEFAULT = { signer: '', role: 'Guru Besar, SK King Edward VII (1)', phrase: 'Dengan penuh penghargaan, sijil ini dianugerahkan kepada' };
+        const SIJIL_DEFAULT = { phrase: 'Dengan penuh penghargaan, sijil ini dianugerahkan kepada' };
         function getSijilSettings() {
             try { return Object.assign({}, SIJIL_DEFAULT, JSON.parse(localStorage.getItem(SIJIL_KEY) || '{}')); } catch (e) { return Object.assign({}, SIJIL_DEFAULT); }
         }
         function saveSijilSettings() {
             localStorage.setItem(SIJIL_KEY, JSON.stringify({
-                signer: document.getElementById('sijilSigner').value,
-                role: document.getElementById('sijilSignerRole').value,
                 phrase: document.getElementById('sijilPhrase').value
             }));
             renderSijil();
@@ -1456,9 +1452,8 @@
                 <div class="body">
                     <img class="logo" src="${logo}" alt="Logo">
                     <div class="school">SK KING EDWARD VII (1) · TAIPING</div>
-                    <div class="motto">~ Magni Nominis Umbra ~</div>
                     <div class="title">SIJIL KEHADIRAN</div>
-                    <div class="sub">CERTIFICATE OF ATTENDANCE</div>
+                    <div class="sub">PENGHARGAAN</div>
                     <div class="rule"><span></span>❖<span></span></div>
                     <div class="txt">${escH(st.phrase)}</div>
                     <div class="name" style="font-size:${s.name.length > 34 ? 26 : s.name.length > 26 ? 32 : 40}pt">${escH(s.name)}</div>
@@ -1468,7 +1463,7 @@
                     <div class="date">pada ${escH(formatDateMalay(p.date))}</div>
                 </div>
                 <div class="foot">
-                    <div class="sign"><div style="height:14mm"></div><div class="ln">${escH(st.signer) || '................................'}</div><div>${escH(st.role)}</div></div>
+                    <div class="sign"><div class="ln">SIJIL DIGITAL</div><div style="font-style:italic">Sijil ini dijana secara digital dan tidak memerlukan tandatangan.</div></div>
                     <div class="seal"><div><span>SKKE1</span><b>★</b><span>${escH(String(year))}</span></div></div>
                     <div class="sign"><div style="height:14mm;display:flex;align-items:flex-end;justify-content:center;font-size:12pt;font-weight:600">${escH(formatDateMalay(p.date))}</div><div class="ln">TARIKH</div><div>Taiping, Perak</div></div>
                 </div>
@@ -1484,7 +1479,7 @@
             sel.innerHTML = programsList.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))
                 .map(x => `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${escH(x.date)} - ${escH(x.title)}</option>`).join('');
             const st = getSijilSettings();
-            [['sijilSigner', 'signer'], ['sijilSignerRole', 'role'], ['sijilPhrase', 'phrase']].forEach(([id, k]) => {
+            [['sijilPhrase', 'phrase']].forEach(([id, k]) => {
                 const el = document.getElementById(id); if (document.activeElement !== el) el.value = st[k];
             });
             const present = sijilPresent(p);
