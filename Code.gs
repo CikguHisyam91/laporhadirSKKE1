@@ -20,6 +20,7 @@ function doPost(e) {
     lock.waitLock(20000);
     const data = JSON.parse(e.postData.contents);
     if (data.action === 'upload') return json_(uploadPhoto_(data));
+    mergeWithExisting_(data);
     const stamp = new Date().toISOString();
     data.stamp = stamp;
     writeData_(data);
@@ -57,6 +58,32 @@ function readData_() {
   if (last < 1) return {};
   const text = sh.getRange(1, 1, last, 1).getValues().map(r => r[0]).join('');
   try { return JSON.parse(text); } catch (err) { return {}; }
+}
+
+// Gabung dengan data sedia ada supaya simpanan serentak dari banyak peranti
+// (contoh 3 kursus serentak) tidak menindih rekod kehadiran satu sama lain.
+function mergeWithExisting_(data) {
+  const cur = readData_();
+  if (!cur || !cur.programs) return;
+  const dels = {};
+  (cur.deletedIds || []).concat(data.deletedIds || []).forEach(id => dels[id] = true);
+  data.deletedIds = Object.keys(dels).slice(-200);
+  const staffIds = {};
+  (data.staff || []).forEach(s => staffIds[s.id] = true);
+  (cur.staff || []).forEach(s => { if (!staffIds[s.id]) (data.staff = data.staff || []).push(s); });
+  const byId = {};
+  (data.programs = data.programs || []).forEach(p => byId[p.id] = p);
+  cur.programs.forEach(c => {
+    if (dels[c.id]) return;
+    const p = byId[c.id];
+    if (!p) { data.programs.push(c); return; }
+    if ((c.updatedAt || 0) > (p.updatedAt || 0)) {
+      ['title', 'date', 'type', 'note', 'facilitators', 'participants', 'updatedAt'].forEach(k => { if (k in c) p[k] = c[k]; });
+    }
+    p.records = Object.assign({}, c.records || {}, p.records || {});
+    if (c.opr && (!p.opr || (c.opr.updatedAt || 0) > (p.opr.updatedAt || 0))) p.opr = c.opr;
+  });
+  data.programs = data.programs.filter(p => !dels[p.id]);
 }
 
 function writeData_(data) {

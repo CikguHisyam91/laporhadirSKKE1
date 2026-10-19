@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts: Inter & Cinzel for Official Header -->
@@ -170,6 +171,7 @@
         .cert.exporting .seal { background: #d4ad4a; }
         #sijilPreviewWrap .cert { transform-origin: top left; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 
+        body.kiosk-locked nav { display: none !important; }
         /* Subtle animations */
         @keyframes pulseBorder {
             0%, 100% { border-color: rgba(220, 38, 38, 0.7); }
@@ -546,7 +548,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
                 <!-- Create / Edit Program Form (Left 5 Cols) -->
-                <div class="lg:col-span-5 bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+                <div id="progFormCard" class="lg:col-span-5 bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
                     <div class="bg-skkeBlack-900 px-5 py-4 text-white flex items-center justify-between">
                         <h3 class="font-bold text-base flex items-center gap-2">
                             <i class="fa-solid fa-calendar-plus text-red-400"></i> Tetapan Program / Sesi Kehadiran
@@ -594,6 +596,29 @@
                                    id="progNoteInput" 
                                    placeholder="Contoh: Semua Guru & Staf Wajib Hadir (Bilik Gerakan SKKE1)" 
                                    class="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-xl focus:border-skkeRed-600 focus:bg-white outline-none">
+                        </div>
+
+                        <div id="facPickerBox">
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                                Fasilitator / Moderator <span class="normal-case font-medium text-gray-500">(akses Panel Admin untuk program ini sahaja)</span>
+                            </label>
+                            <input type="text" placeholder="Cari nama guru..." oninput="renderPicker('fac')" id="facPickerSearch" class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-t-xl outline-none">
+                            <div id="facPicker" class="max-h-36 overflow-y-auto border border-t-0 border-gray-300 rounded-b-xl p-2 space-y-1 text-xs"></div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                                Peserta Sasaran <span id="partPickerCount" class="normal-case font-semibold text-skkeRed-700"></span>
+                            </label>
+                            <div class="flex flex-wrap gap-1.5 mb-1.5">
+                                <button type="button" onclick="pickerPreset('all')" class="px-2.5 py-1 text-[11px] font-bold bg-gray-100 hover:bg-gray-200 rounded-lg">Semua Staf</button>
+                                <button type="button" onclick="pickerPreset('guru')" class="px-2.5 py-1 text-[11px] font-bold bg-gray-100 hover:bg-gray-200 rounded-lg">Guru Sahaja</button>
+                                <button type="button" onclick="pickerPreset('staf')" class="px-2.5 py-1 text-[11px] font-bold bg-gray-100 hover:bg-gray-200 rounded-lg">Staf Sokongan Sahaja</button>
+                                <button type="button" onclick="pickerPreset('none')" class="px-2.5 py-1 text-[11px] font-bold bg-gray-100 hover:bg-gray-200 rounded-lg">Kosongkan</button>
+                            </div>
+                            <input type="text" placeholder="Cari nama peserta..." oninput="renderPicker('part')" id="partPickerSearch" class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-300 rounded-t-xl outline-none">
+                            <div id="partPicker" class="max-h-44 overflow-y-auto border border-t-0 border-gray-300 rounded-b-xl p-2 space-y-1 text-xs"></div>
+                            <p class="text-[11px] text-gray-500 mt-1">Tiada pilihan = semua staf dikira sebagai peserta.</p>
                         </div>
 
                         <div class="flex flex-wrap gap-2 pt-2">
@@ -884,6 +909,30 @@
     <!-- ========================================================================= -->
     <!-- MODAL: TETAPAN LOGO RASMI SEKOLAH (TIADA SUNTINGAN / 100% ASAL)           -->
     <!-- ========================================================================= -->
+    <!-- MODAL: PAUTAN & QR PROGRAM -->
+    <div id="shareModal" class="fixed inset-0 z-50 bg-black/70 hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[95vh] overflow-y-auto">
+            <div class="bg-skkeBlack-900 px-5 py-4 text-white flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="font-bold text-base"><i class="fa-solid fa-qrcode text-red-400 mr-1"></i> Pautan Kehadiran Program</h3>
+                    <p id="shareTitle" class="text-xs text-gray-300 mt-1"></p>
+                </div>
+                <button onclick="closeShareModal()" class="text-gray-300 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div class="p-5 space-y-3 text-center">
+                <div id="shareQR" class="inline-block p-3 bg-white border-4 border-skkeRed-600 rounded-2xl"></div>
+                <p class="text-xs text-gray-500">Tayangkan QR ini di skrin. Peserta imbas, masukkan IC, kehadiran terus masuk ke program ini.</p>
+                <input id="shareLink" readonly class="w-full px-3 py-2 text-xs font-mono bg-gray-50 border border-gray-300 rounded-xl text-center">
+                <div class="grid grid-cols-2 gap-2">
+                    <a id="shareWA" target="_blank" rel="noopener" class="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp</a>
+                    <a id="shareTG" target="_blank" rel="noopener" class="px-3 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm rounded-xl"><i class="fa-brands fa-telegram mr-1"></i> Telegram</a>
+                    <button onclick="copyShareLink()" class="px-3 py-2.5 bg-gray-800 hover:bg-black text-white font-bold text-sm rounded-xl"><i class="fa-regular fa-copy mr-1"></i> Salin Pautan</button>
+                    <a id="shareOpen" target="_blank" rel="noopener" class="px-3 py-2.5 bg-skkeRed-600 hover:bg-skkeRed-700 text-white font-bold text-sm rounded-xl"><i class="fa-solid fa-display mr-1"></i> Buka Kiosk</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: LOG MASUK ADMIN -->
     <div id="adminLoginModal" class="fixed inset-0 z-50 bg-black/70 hidden items-center justify-center p-4 no-print">
         <form onsubmit="adminLoginSubmit(event)" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -1232,6 +1281,8 @@
             loadAllData();
             localStorage.setItem('skke1_dirty', wasDirty || '0');
             startLiveClock();
+            if (KIOSK_LOCK_ID) document.body.classList.add('kiosk-locked');
+            renderPicker('fac'); renderPicker('part');
             renderAllViews();
             pullFromCloud(true);
             setInterval(() => { if (!document.hidden) pullFromCloud(false); }, 15000);
@@ -1640,6 +1691,9 @@
             (remote.programs || []).forEach(r => {
                 const l = byId[r.id];
                 if (!l) { programsList.push(r); return; }
+                if ((r.updatedAt || 0) > (l.updatedAt || 0)) {
+                    ['title', 'date', 'type', 'note', 'facilitators', 'participants', 'updatedAt'].forEach(k => { if (k in r) l[k] = r[k]; });
+                }
                 l.records = Object.assign({}, r.records || {}, l.records || {});
                 if (r.opr && (!l.opr || (r.opr.updatedAt || 0) > (l.opr.updatedAt || 0))) l.opr = r.opr;
             });
@@ -1720,8 +1774,17 @@
             cloudReady = true;
         }
 
+        // Pautan khas program (?p=ID): peranti ini terkunci kepada program tersebut
+        const KIOSK_LOCK_ID = new URLSearchParams(location.search).get('p');
         function getActiveProgram() {
+            if (KIOSK_LOCK_ID) return programsList.find(p => p.id === KIOSK_LOCK_ID) || null;
             return programsList.find(p => p.id === activeProgramId) || programsList[0];
+        }
+        // Senarai peserta program (peserta sasaran + sesiapa yang hadir walaupun bukan sasaran)
+        function rosterFor(p) {
+            if (!p || !p.participants || !p.participants.length) return staffList;
+            const ids = new Set(p.participants);
+            return staffList.filter(s => ids.has(s.id) || (p.records && p.records[s.id] && p.records[s.id].status === 'HADIR'));
         }
 
         /*************************************************************************
@@ -1849,10 +1912,33 @@
         let pendingAdminTab = null;
         const isPentadbir = s => /^(GURU BESAR|PK |PENOLONG KANAN)/.test((s.role || '').toUpperCase());
         const hasAdminAccess = s => !!s && (isPentadbir(s) || !!s.adminAccess);
-        function currentAdmin() {
+        const isFacilitator = s => !!s && programsList.some(p => (p.facilitators || []).includes(s.id));
+        const canLogin = s => hasAdminAccess(s) || isFacilitator(s);
+        function currentUser() {
             const id = sessionStorage.getItem('skke1_admin_id');
             const s = staffList.find(x => x.id === id);
+            return canLogin(s) ? s : null;
+        }
+        function currentAdmin() {
+            const s = currentUser();
             return hasAdminAccess(s) ? s : null;
+        }
+        // Program yang boleh dilihat dalam Panel Admin
+        function panelPrograms() {
+            if (currentAdmin()) return programsList;
+            const u = currentUser();
+            return u ? programsList.filter(p => (p.facilitators || []).includes(u.id)) : [];
+        }
+        function canManageProgram(p) {
+            if (currentAdmin()) return true;
+            const u = currentUser();
+            return !!u && !!p && (p.facilitators || []).includes(u.id);
+        }
+        function updateProgFormAccess() {
+            const adm = !!currentAdmin();
+            const editing = !!document.getElementById('editProgramId').value;
+            document.getElementById('progFormCard').classList.toggle('hidden', !adm && !editing);
+            document.getElementById('facPickerBox').classList.toggle('hidden', !adm);
         }
         const canTagAdmin = () => { const a = currentAdmin(); return !!a && isPentadbir(a); };
         function openAdminLogin(tab) {
@@ -1873,23 +1959,106 @@
             const err = document.getElementById('adminLoginErr');
             const s = staffList.find(x => x.ic && x.ic === ic);
             if (!s) { err.textContent = 'No. IC tidak dijumpai dalam pangkalan data.'; err.classList.remove('hidden'); return; }
-            if (!hasAdminAccess(s)) { err.textContent = 'Maaf, anda tiada akses. Sila hubungi pentadbir.'; err.classList.remove('hidden'); return; }
+            if (!canLogin(s)) { err.textContent = 'Maaf, anda tiada akses. Sila hubungi pentadbir.'; err.classList.remove('hidden'); return; }
             sessionStorage.setItem('skke1_admin_id', s.id);
+            resetProgramForm();
             closeAdminLogin();
             showToast(`Selamat datang, ${s.name}`, 'success');
             switchMainTab(pendingAdminTab || 'admin');
         }
         function adminLogout() {
             sessionStorage.removeItem('skke1_admin_id');
+            resetProgramForm();
             switchMainTab('kiosk');
             showToast('Anda telah log keluar.', 'info');
         }
         function updateAdminUI(tabName) {
-            const a = currentAdmin();
+            const a = currentUser();
             document.querySelectorAll('.admin-lock').forEach(el => el.classList.toggle('hidden', !!a));
-            document.getElementById('adminSessionName').textContent = a ? `${a.name} (${a.role})` : '';
+            document.getElementById('adminSessionName').textContent = a ? `${a.name} (${hasAdminAccess(a) ? a.role : 'FASILITATOR'})` : '';
             document.getElementById('adminSessionBar').classList.toggle('hidden', !(a && LOCKED_TABS.includes(tabName)));
         }
+        /* ---------- Pemilih Fasilitator & Peserta ---------- */
+        let formFac = new Set(), formPart = new Set();
+        function renderPicker(kind) {
+            const box = document.getElementById(kind + 'Picker');
+            if (!box) return;
+            const set = kind === 'fac' ? formFac : formPart;
+            const q = (document.getElementById(kind + 'PickerSearch').value || '').toUpperCase().trim();
+            const list = staffList.filter(s => !q || s.name.toUpperCase().includes(q) || s.role.toUpperCase().includes(q));
+            box.innerHTML = list.map(s => `<label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" ${set.has(s.id) ? 'checked' : ''} onchange="togglePick('${kind}','${s.id}',this.checked)" class="w-4 h-4 accent-red-700 shrink-0">
+                <span class="truncate"><b>${escH(s.name)}</b> <span class="text-gray-500">· ${escH(s.role)}</span></span></label>`).join('') || '<p class="text-gray-400 p-1">Tiada padanan.</p>';
+            if (kind === 'part') document.getElementById('partPickerCount').textContent = formPart.size ? `(${formPart.size} dipilih)` : '(Semua staf)';
+        }
+        function togglePick(kind, id, on) {
+            const set = kind === 'fac' ? formFac : formPart;
+            on ? set.add(id) : set.delete(id);
+            if (kind === 'part') document.getElementById('partPickerCount').textContent = formPart.size ? `(${formPart.size} dipilih)` : '(Semua staf)';
+        }
+        function pickerPreset(mode) {
+            formPart = new Set(staffList.filter(s => mode === 'all' || (mode === 'guru' && s.category === 'GURU') || (mode === 'staf' && s.category === 'STAF SOKONGAN')).map(s => s.id));
+            renderPicker('part');
+        }
+
+        /* ---------- Duplicate Program ---------- */
+        function duplicateProgram(progId) {
+            if (!currentAdmin()) return;
+            const src = programsList.find(p => p.id === progId);
+            if (!src) return;
+            const name = prompt('Nama program baharu:', src.title + ' (SALINAN)');
+            if (name === null) return;
+            const title = name.trim().toUpperCase();
+            if (!title) { showToast('Nama program tidak boleh kosong.', 'error'); return; }
+            const copy = {
+                id: 'PROG-' + Date.now(),
+                title: title,
+                date: getTodayISO(),
+                type: src.type || 'PROGRAM',
+                note: src.note || '',
+                facilitators: (src.facilitators || []).slice(),
+                participants: (src.participants || []).slice(),
+                createdAt: new Date().toISOString(),
+                updatedAt: Date.now(),
+                records: {}
+            };
+            programsList.unshift(copy);
+            saveProgramsData();
+            renderAllViews();
+            editProgramDetails(copy.id);
+            showToast(`Program "${title}" diduplikasi. Semak tarikh & butiran, kemudian simpan.`, 'success');
+        }
+
+        /* ---------- Pautan / QR / WhatsApp / Telegram ---------- */
+        function programLink(id) { return location.origin + location.pathname + '?p=' + encodeURIComponent(id); }
+        function openShareModal(progId) {
+            const p = programsList.find(x => x.id === progId);
+            if (!p) return;
+            const link = programLink(p.id);
+            const msg = `*${p.title}*\nTarikh: ${formatDateMalay(p.date)}\n\nSila rekod kehadiran anda melalui pautan ini (masukkan No. IC):\n${link}`;
+            document.getElementById('shareTitle').textContent = `${p.title} · ${formatDateMalay(p.date)}`;
+            document.getElementById('shareLink').value = link;
+            document.getElementById('shareWA').href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+            document.getElementById('shareTG').href = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(`${p.title} - Sila rekod kehadiran (masukkan No. IC)`);
+            document.getElementById('shareOpen').href = link;
+            const qr = document.getElementById('shareQR');
+            qr.innerHTML = '';
+            if (window.QRCode) new QRCode(qr, { text: link, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+            else qr.innerHTML = '<p class="text-xs text-gray-500 p-6">QR memerlukan internet.</p>';
+            const m = document.getElementById('shareModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeShareModal() {
+            const m = document.getElementById('shareModal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function copyShareLink() {
+            const el = document.getElementById('shareLink');
+            const done = () => showToast('Pautan disalin. Tampal di WhatsApp / Telegram.', 'success');
+            if (navigator.clipboard) navigator.clipboard.writeText(el.value).then(done, () => { el.select(); document.execCommand('copy'); done(); });
+            else { el.select(); document.execCommand('copy'); done(); }
+        }
+
         function toggleAdminAccess(staffId, on) {
             if (!canTagAdmin()) { showToast('Hanya Guru Besar / Penolong Kanan boleh memberi akses.', 'error'); renderDatabaseTable(); return; }
             const s = staffList.find(x => x.id === staffId);
@@ -1901,7 +2070,17 @@
         }
 
         function switchMainTab(tabName) {
-            if (LOCKED_TABS.includes(tabName) && !currentAdmin()) { openAdminLogin(tabName); return; }
+            if (KIOSK_LOCK_ID && tabName !== 'kiosk') return;
+            if (LOCKED_TABS.includes(tabName) && !currentUser()) { openAdminLogin(tabName); return; }
+            if (tabName === 'database' && !currentAdmin()) { showToast('Fasilitator hanya boleh akses Panel Admin untuk program sendiri.', 'error'); return; }
+            if (tabName === 'admin' && !currentAdmin()) {
+                const mine = panelPrograms();
+                if (!mine.some(p => p.id === activeProgramId) && mine.length) {
+                    activeProgramId = mine[0].id;
+                    localStorage.setItem(STORAGE_KEYS.ACTIVE_PROG_ID, activeProgramId);
+                }
+            }
+            updateProgFormAccess();
             updateAdminUI(tabName);
             const tabs = ['kiosk', 'admin', 'database', 'opr', 'sijil'];
             tabs.forEach(t => {
@@ -1938,9 +2117,10 @@
             document.getElementById('bannerProgramNote').textContent = `Arahan / Catatan: ${prog.note || 'Tiada catatan tambahan'}`;
 
             // Calculate stats
-            const total = staffList.length;
+            const roster = rosterFor(prog);
+            const total = roster.length;
             let presentCount = 0;
-            staffList.forEach(s => {
+            roster.forEach(s => {
                 if (prog.records && prog.records[s.id] && prog.records[s.id].status === 'HADIR') {
                     presentCount++;
                 }
@@ -2173,7 +2353,8 @@
             if (!prog || !container) return;
 
             const presentList = [];
-            staffList.forEach(s => {
+            const roster = rosterFor(prog);
+            roster.forEach(s => {
                 const rec = prog.records ? prog.records[s.id] : null;
                 if (rec && rec.status === 'HADIR') {
                     presentList.push({
@@ -2186,7 +2367,7 @@
 
             // Sort newest check-in first
             presentList.sort((a, b) => b.timestamp - a.timestamp);
-            badge.textContent = `${presentList.length} / ${staffList.length} Hadir`;
+            badge.textContent = `${presentList.length} / ${roster.length} Hadir`;
 
             const filtered = presentList.filter(item => item.staff.name.toUpperCase().includes(query));
 
@@ -2241,17 +2422,25 @@
                 // Update existing program
                 const prog = programsList.find(p => p.id === editId);
                 if (prog) {
+                    if (!canManageProgram(prog)) { showToast('Anda tiada akses untuk program ini.', 'error'); return; }
                     prog.title = title;
                     prog.date = date;
                     prog.type = type;
                     prog.note = note;
+                    if (currentAdmin()) prog.facilitators = Array.from(formFac);
+                    prog.participants = Array.from(formPart);
+                    prog.updatedAt = Date.now();
                     saveProgramsData();
                     showToast('Maklumat program berjaya dikemas kini!', 'success');
                 }
                 resetProgramForm();
             } else {
                 // Create brand new program and set as active
+                if (!currentAdmin()) { showToast('Hanya pentadbir boleh mencipta program baharu.', 'error'); return; }
                 const newProg = {
+                    facilitators: Array.from(formFac),
+                    participants: Array.from(formPart),
+                    updatedAt: Date.now(),
                     id: 'PROG-' + Date.now(),
                     title: title,
                     date: date,
@@ -2277,6 +2466,9 @@
             document.getElementById('progNoteInput').value = '';
             document.getElementById('saveProgBtn').innerHTML = `<i class="fa-solid fa-plus-circle"></i> Cipta & Jadikan Program Aktif`;
             document.getElementById('cancelEditProgBtn').classList.add('hidden');
+            formFac = new Set(); formPart = new Set();
+            renderPicker('fac'); renderPicker('part');
+            updateProgFormAccess();
         }
 
         function editProgramDetails(progId) {
@@ -2289,10 +2481,15 @@
             document.getElementById('progNoteInput').value = prog.note || '';
             document.getElementById('saveProgBtn').innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Program`;
             document.getElementById('cancelEditProgBtn').classList.remove('hidden');
+            formFac = new Set(prog.facilitators || []); formPart = new Set(prog.participants || []);
+            renderPicker('fac'); renderPicker('part');
+            updateProgFormAccess();
+            document.getElementById('progFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
             document.getElementById('progTitleInput').focus();
         }
 
         function selectActiveProgram(progId) {
+            if (!canManageProgram(programsList.find(p => p.id === progId))) return;
             activeProgramId = progId;
             saveProgramsData();
             renderAllViews();
@@ -2301,6 +2498,8 @@
         }
 
         function deleteProgram(progId) {
+            if (!currentAdmin()) { showToast('Hanya pentadbir boleh memadam program.', 'error'); return; }
+            if (!confirm('Padam program ini beserta semua rekod kehadirannya?')) return;
             if (programsList.length <= 1) {
                 showToast('Sekurang-kurangnya satu program mesti kekal dalam sistem.', 'error');
                 return;
@@ -2321,17 +2520,21 @@
             const badge = document.getElementById('totalProgramsBadge');
             if (!container) return;
 
-            badge.textContent = `${programsList.length} Program Direkodkan`;
+            const visible = panelPrograms();
+            const isAdm = !!currentAdmin();
+            badge.textContent = `${visible.length} Program Direkodkan`;
 
-            container.innerHTML = programsList.map(prog => {
+            container.innerHTML = visible.map(prog => {
                 const isActive = prog.id === activeProgramId;
+                const roster = rosterFor(prog);
+                const facNames = (prog.facilitators || []).map(id => (staffList.find(s => s.id === id) || {}).name).filter(Boolean);
                 let presentCount = 0;
-                staffList.forEach(s => {
+                roster.forEach(s => {
                     if (prog.records && prog.records[s.id] && prog.records[s.id].status === 'HADIR') {
                         presentCount++;
                     }
                 });
-                const pct = staffList.length > 0 ? Math.round((presentCount / staffList.length) * 100) : 0;
+                const pct = roster.length > 0 ? Math.round((presentCount / roster.length) * 100) : 0;
 
                 return `
                     <div class="p-3.5 rounded-xl border-2 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isActive ? 'border-skkeRed-600 bg-red-50/40' : 'border-gray-200 bg-gray-50 hover:bg-white'}">
@@ -2345,8 +2548,9 @@
                             </div>
                             <h4 class="text-sm font-extrabold text-gray-900 truncate">${prog.title}</h4>
                             <div class="text-xs text-gray-600 flex items-center gap-3">
-                                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-user-check mr-1"></i>${presentCount}/${staffList.length} Hadir (${pct}%)</span>
+                                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-user-check mr-1"></i>${presentCount}/${roster.length} Hadir (${pct}%)</span>
                             </div>
+                            ${facNames.length ? `<div class="text-[11px] text-indigo-700 font-semibold truncate"><i class="fa-solid fa-chalkboard-user mr-1"></i>Fasilitator: ${escH(facNames.join(', '))}</div>` : ''}
                         </div>
 
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -2355,10 +2559,16 @@
                                     Pilih / Aktifkan
                                 </button>
                             ` : ''}
-                            <button onclick="editProgramDetails('${prog.id}')" title="Edit Tajuk / Tarikh" class="p-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs">
+                            <button onclick="openShareModal('${prog.id}')" title="Pautan / QR / WhatsApp / Telegram" class="p-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-gray-300 rounded-lg text-xs">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </button>
+                            ${isAdm ? `<button onclick="duplicateProgram('${prog.id}')" title="Duplicate Program" class="p-2 bg-white hover:bg-indigo-50 text-indigo-700 border border-gray-300 rounded-lg text-xs">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>` : ''}
+                            <button onclick="editProgramDetails('${prog.id}')" title="Edit Program" class="p-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            ${programsList.length > 1 ? `
+                            ${isAdm && programsList.length > 1 ? `
                                 <button onclick="deleteProgram('${prog.id}')" title="Padam Program" class="p-2 bg-white hover:bg-red-50 text-red-600 border border-gray-300 rounded-lg text-xs">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
@@ -2391,7 +2601,7 @@
             document.getElementById('adminTableProgramTitle').textContent = `${prog.title} (${formatDateMalay(prog.date)})`;
             const query = (document.getElementById('adminAttendanceSearch').value || '').toUpperCase().trim();
 
-            const filtered = staffList.filter(s => {
+            const filtered = rosterFor(prog).filter(s => {
                 const rec = prog.records ? prog.records[s.id] : null;
                 const isPresent = rec && rec.status === 'HADIR';
 
@@ -2507,8 +2717,9 @@
             if (!prog) return;
             if (!prog.records) prog.records = {};
             const nowTime = getCurrentFormattedTime();
+            const roster = rosterFor(prog);
 
-            staffList.forEach(s => {
+            roster.forEach(s => {
                 if (!prog.records[s.id] || prog.records[s.id].status !== 'HADIR') {
                     prog.records[s.id] = {
                         status: 'HADIR',
@@ -2520,7 +2731,7 @@
             });
             saveProgramsData();
             renderAllViews();
-            showToast('Semua 50 guru & staf telah ditandakan HADIR.', 'success');
+            showToast(`Semua ${roster.length} peserta telah ditandakan HADIR.`, 'success');
         }
 
         /*************************************************************************
@@ -2668,8 +2879,9 @@
             document.getElementById('printProgDate').textContent = formatDateMalay(prog.date);
             document.getElementById('printProgNote').textContent = prog.note || '-';
 
-            const guruList = staffList.filter(s => s.category === 'GURU');
-            const stafSokonganList = staffList.filter(s => s.category === 'STAF SOKONGAN');
+            const roster = rosterFor(prog);
+            const guruList = roster.filter(s => s.category === 'GURU');
+            const stafSokonganList = roster.filter(s => s.category === 'STAF SOKONGAN');
 
             // Render 2-Column Guru Table (matching the official 2-column form)
             const halfGuru = Math.ceil(guruList.length / 2);
@@ -2728,9 +2940,9 @@
             stafTbody.innerHTML = stafRowsHtml;
 
             // Update Print Summary Stats
-            const total = staffList.length;
+            const total = roster.length;
             let present = 0;
-            staffList.forEach(s => {
+            roster.forEach(s => {
                 if (prog.records && prog.records[s.id] && prog.records[s.id].status === 'HADIR') {
                     present++;
                 }
