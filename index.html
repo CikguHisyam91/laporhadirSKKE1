@@ -9,7 +9,7 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts: Inter & Cinzel for Official Header -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Great+Vibes&family=Playfair+Display:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -143,7 +143,7 @@
         .cert .rule { display: flex; align-items: center; gap: 3mm; margin: 1.5mm 0; color: #b8912f; }
         .cert .rule span { display: block; width: 45mm; height: .4mm; background: linear-gradient(90deg, transparent, #b8912f, transparent); }
         .cert .txt { font-size: 14pt; font-style: italic; color: #333; }
-        .cert .name { font-family: 'Great Vibes', cursive; font-size: 42pt; color: #0d0d0d; line-height: 1.15; margin-top: 1mm; padding: 0 10mm; border-bottom: .4mm solid #b8912f; min-width: 150mm; white-space: nowrap; }
+        .cert .name { font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif; font-weight: 700; font-size: 30pt; letter-spacing: .04em; color: #0d0d0d; line-height: 1.25; margin-top: 2mm; padding: 0 6mm 1mm; border-bottom: .4mm solid #b8912f; min-width: 150mm; max-width: 235mm; box-sizing: border-box; white-space: nowrap; }
         .cert .role { font-family: 'Cinzel', serif; font-size: 10pt; font-weight: 700; letter-spacing: .25em; color: #9b1c1c; margin-top: 1.5mm; }
         .cert .prog { font-family: 'Cinzel', serif; font-weight: 800; font-size: 16pt; color: #0d0d0d; margin-top: 1mm; max-width: 220mm; line-height: 1.25; }
         .cert .date { font-size: 13pt; font-weight: 600; color: #333; margin-top: 1mm; }
@@ -1456,7 +1456,7 @@
                     <div class="sub">PENGHARGAAN</div>
                     <div class="rule"><span></span>❖<span></span></div>
                     <div class="txt">${escH(st.phrase)}</div>
-                    <div class="name" style="font-size:${s.name.length > 34 ? 26 : s.name.length > 26 ? 32 : 40}pt">${escH(s.name)}</div>
+                    <div class="name">${escH(s.name)}</div>
                     <div class="role">${escH(s.role)}</div>
                     <div class="txt" style="margin-top:2mm">atas kehadiran dan penyertaan dalam</div>
                     <div class="prog">${escH(p.title)}</div>
@@ -1469,6 +1469,14 @@
                 </div>
                 <div class="serial">NO. SIJIL: ${serial}</div>
             </div>`;
+        }
+        // Kecilkan saiz nama sehingga muat dalam satu baris (nama panjang atau pendek)
+        function fitSijilNames(root) {
+            root.querySelectorAll('.cert .name').forEach(el => {
+                let size = 30;
+                el.style.fontSize = size + 'pt';
+                while (el.scrollWidth > el.clientWidth + 1 && size > 10) { size -= 0.5; el.style.fontSize = size + 'pt'; }
+            });
         }
         function renderSijil() {
             const sel = document.getElementById('sijilProgSelect');
@@ -1495,6 +1503,8 @@
             box.innerHTML = sijilHTML(p, sample, 0);
             const cert = box.firstElementChild;
             const scale = Math.min(1, (wrap.clientWidth - 24) / cert.offsetWidth || 1);
+            fitSijilNames(box);
+            if (document.fonts) document.fonts.ready.then(() => fitSijilNames(box));
             cert.style.transform = `scale(${scale})`;
             box.style.height = (cert.offsetHeight * scale) + 'px';
         }
@@ -1510,7 +1520,13 @@
             const imgs = Array.from(document.querySelectorAll('#sijilPrint img'));
             const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
             Promise.all([fontsReady].concat(imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 8000); }))))
-                .then(() => { window.print(); });
+                .then(() => {
+                    const sp = document.getElementById('sijilPrint');
+                    sp.style.cssText = 'display:block;position:fixed;left:-10000px;top:0';
+                    fitSijilNames(sp);
+                    sp.style.cssText = 'display:none';
+                    window.print();
+                });
         }
         window.addEventListener('afterprint', () => { document.body.classList.remove('print-sijil'); document.getElementById('sijilPrint').innerHTML = ''; });
 
