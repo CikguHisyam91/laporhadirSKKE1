@@ -14,3 +14,9 @@ Siap! Semua peranti akan berkongsi data yang sama. Tab **KEHADIRAN** dan **STAF*
 
 ## Sijil Kehadiran
 Tab **Sijil**: pilih program, pilih penerima (hanya yang HADIR), sijil digital tanpa tandatangan. Klik **Cetak Sijil Ini** atau **Cetak Semua Yang Hadir**. Dalam tetingkap cetak pilih **Simpan sebagai PDF** dan tandakan **Background graphics**.
+
+## Akses Admin
+Tab **Panel Admin & Rekod** dan **Pangkalan Data IC** dikunci. Log masuk guna No. IC.
+- Automatik dibenarkan: jawatan bermula GURU BESAR / PK / PENOLONG KANAN.
+- Guru lain: Guru Besar / PK tandakan **Beri akses** dalam tab Pangkalan Data IC.
+- Pentadbir mesti sudah daftar IC (cara paling mudah: daftar hadir sekali di kiosk).

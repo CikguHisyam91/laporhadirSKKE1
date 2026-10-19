@@ -238,10 +238,10 @@
                             <i class="fa-solid fa-id-card-clip"></i> Daftar Kehadiran
                         </button>
                         <button onclick="switchMainTab('admin')" id="tabBtn-admin" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
-                            <i class="fa-solid fa-sliders"></i> Panel Admin & Rekod
+                            <i class="fa-solid fa-lock text-[10px] admin-lock"></i><i class="fa-solid fa-sliders"></i> Panel Admin & Rekod
                         </button>
                         <button onclick="switchMainTab('database')" id="tabBtn-database" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
-                            <i class="fa-solid fa-users-gear"></i> Pangkalan Data IC (50)
+                            <i class="fa-solid fa-lock text-[10px] admin-lock"></i><i class="fa-solid fa-users-gear"></i> Pangkalan Data IC (50)
                         </button>
                         <button onclick="switchMainTab('opr')" id="tabBtn-opr" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-gray-300 hover:text-white hover:bg-white/10">
                             <i class="fa-solid fa-file-image"></i> OPR
@@ -537,6 +537,10 @@
         <!-- ========================================================================= -->
         <!-- TAB 2: PANEL ADMIN, PENGURUSAN PROGRAM & REKOD TERDAHULU                  -->
         <!-- ========================================================================= -->
+        <div id="adminSessionBar" class="hidden mb-4 flex flex-wrap items-center justify-between gap-2 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2.5 text-sm">
+            <span class="font-semibold text-emerald-900"><i class="fa-solid fa-user-shield mr-1"></i> Log masuk admin: <b id="adminSessionName"></b></span>
+            <button onclick="adminLogout()" class="px-3 py-1.5 bg-white border border-emerald-400 text-emerald-800 font-bold text-xs rounded-lg hover:bg-emerald-100"><i class="fa-solid fa-right-from-bracket mr-1"></i> Log Keluar</button>
+        </div>
         <section id="view-admin" class="hidden space-y-6">
             
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -850,6 +854,7 @@
                                 <th class="py-3 px-4 font-bold">Kategori</th>
                                 <th class="py-3 px-4 font-bold">Jawatan</th>
                                 <th class="py-3 px-4 font-bold">No. Kad Pengenalan (12 Digit)</th>
+                                <th class="py-3 px-4 font-bold text-center">Akses Admin</th>
                                 <th class="py-3 px-4 font-bold text-center">Tindakan</th>
                             </tr>
                         </thead>
@@ -879,6 +884,25 @@
     <!-- ========================================================================= -->
     <!-- MODAL: TETAPAN LOGO RASMI SEKOLAH (TIADA SUNTINGAN / 100% ASAL)           -->
     <!-- ========================================================================= -->
+    <!-- MODAL: LOG MASUK ADMIN -->
+    <div id="adminLoginModal" class="fixed inset-0 z-50 bg-black/70 hidden items-center justify-center p-4 no-print">
+        <form onsubmit="adminLoginSubmit(event)" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="bg-skkeBlack-900 px-5 py-4 text-white">
+                <h3 class="font-bold text-base"><i class="fa-solid fa-user-shield text-red-400 mr-1"></i> Akses Terhad</h3>
+                <p class="text-xs text-gray-300 mt-1">Hanya Guru Besar, Penolong Kanan dan guru yang diberi akses oleh pentadbir.</p>
+            </div>
+            <div class="p-5 space-y-3">
+                <label class="block text-xs font-bold text-gray-700">No. Kad Pengenalan (12 digit)</label>
+                <input id="adminLoginIC" type="password" inputmode="numeric" maxlength="12" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full px-3.5 py-2.5 font-mono text-lg tracking-widest bg-gray-50 border border-gray-300 rounded-xl focus:border-skkeRed-600 outline-none" placeholder="••••••••••••">
+                <p id="adminLoginErr" class="text-xs font-semibold text-red-600 hidden"></p>
+                <div class="flex gap-2 pt-1">
+                    <button type="button" onclick="closeAdminLogin()" class="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 font-bold text-sm rounded-xl">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-skkeRed-600 hover:bg-skkeRed-700 text-white font-bold text-sm rounded-xl">Log Masuk</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
     <div id="logoModal" class="fixed inset-0 z-50 bg-black/70 hidden items-center justify-center p-4 no-print">
         <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-200 overflow-hidden">
             <div class="bg-skkeBlack-900 px-5 py-4 text-white flex items-center justify-between">
@@ -1817,7 +1841,68 @@
         /*************************************************************************
          * 5. NAVIGATION & UI RENDERING
          *************************************************************************/
+        /*************************************************************************
+         * KAWALAN AKSES ADMIN
+         * Guru Besar & Penolong Kanan (ikut jawatan) + guru yang ditag pentadbir
+         *************************************************************************/
+        const LOCKED_TABS = ['admin', 'database'];
+        let pendingAdminTab = null;
+        const isPentadbir = s => /^(GURU BESAR|PK |PENOLONG KANAN)/.test((s.role || '').toUpperCase());
+        const hasAdminAccess = s => !!s && (isPentadbir(s) || !!s.adminAccess);
+        function currentAdmin() {
+            const id = sessionStorage.getItem('skke1_admin_id');
+            const s = staffList.find(x => x.id === id);
+            return hasAdminAccess(s) ? s : null;
+        }
+        const canTagAdmin = () => { const a = currentAdmin(); return !!a && isPentadbir(a); };
+        function openAdminLogin(tab) {
+            pendingAdminTab = tab;
+            document.getElementById('adminLoginIC').value = '';
+            document.getElementById('adminLoginErr').classList.add('hidden');
+            const m = document.getElementById('adminLoginModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            setTimeout(() => document.getElementById('adminLoginIC').focus(), 50);
+        }
+        function closeAdminLogin() {
+            const m = document.getElementById('adminLoginModal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function adminLoginSubmit(e) {
+            e.preventDefault();
+            const ic = document.getElementById('adminLoginIC').value;
+            const err = document.getElementById('adminLoginErr');
+            const s = staffList.find(x => x.ic && x.ic === ic);
+            if (!s) { err.textContent = 'No. IC tidak dijumpai dalam pangkalan data.'; err.classList.remove('hidden'); return; }
+            if (!hasAdminAccess(s)) { err.textContent = 'Maaf, anda tiada akses. Sila hubungi pentadbir.'; err.classList.remove('hidden'); return; }
+            sessionStorage.setItem('skke1_admin_id', s.id);
+            closeAdminLogin();
+            showToast(`Selamat datang, ${s.name}`, 'success');
+            switchMainTab(pendingAdminTab || 'admin');
+        }
+        function adminLogout() {
+            sessionStorage.removeItem('skke1_admin_id');
+            switchMainTab('kiosk');
+            showToast('Anda telah log keluar.', 'info');
+        }
+        function updateAdminUI(tabName) {
+            const a = currentAdmin();
+            document.querySelectorAll('.admin-lock').forEach(el => el.classList.toggle('hidden', !!a));
+            document.getElementById('adminSessionName').textContent = a ? `${a.name} (${a.role})` : '';
+            document.getElementById('adminSessionBar').classList.toggle('hidden', !(a && LOCKED_TABS.includes(tabName)));
+        }
+        function toggleAdminAccess(staffId, on) {
+            if (!canTagAdmin()) { showToast('Hanya Guru Besar / Penolong Kanan boleh memberi akses.', 'error'); renderDatabaseTable(); return; }
+            const s = staffList.find(x => x.id === staffId);
+            if (!s) return;
+            s.adminAccess = on;
+            saveStaffData();
+            renderDatabaseTable();
+            showToast(`${s.name}: akses admin ${on ? 'DIBERI' : 'DITARIK BALIK'}.`, on ? 'success' : 'info');
+        }
+
         function switchMainTab(tabName) {
+            if (LOCKED_TABS.includes(tabName) && !currentAdmin()) { openAdminLogin(tabName); return; }
+            updateAdminUI(tabName);
             const tabs = ['kiosk', 'admin', 'database', 'opr', 'sijil'];
             tabs.forEach(t => {
                 const view = document.getElementById(`view-${t}`);
@@ -2486,6 +2571,10 @@
                                    class="w-44 px-3 py-1.5 font-mono text-xs font-bold rounded-lg border ${s.ic ? 'bg-emerald-50 border-emerald-400 text-emerald-950' : 'bg-amber-50 border-amber-300 text-gray-800'} focus:border-skkeRed-600 outline-none">
                             ${s.ic ? `<i class="fa-solid fa-circle-check text-emerald-600" title="IC Telah Dipautkan"></i>` : ''}
                         </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        ${isPentadbir(s) ? `<span class="px-2 py-1 rounded-full text-[11px] font-bold bg-red-100 text-skkeRed-700">PENTADBIR</span>`
+                          : `<label class="inline-flex items-center gap-1.5 text-xs font-semibold ${canTagAdmin() ? 'cursor-pointer' : 'opacity-50'}"><input type="checkbox" ${s.adminAccess ? 'checked' : ''} ${canTagAdmin() ? '' : 'disabled'} onchange="toggleAdminAccess('${s.id}', this.checked)" class="w-4 h-4 accent-red-700"> Beri akses</label>`}
                     </td>
                     <td class="py-3 px-4 text-center">
                         ${s.ic ? `
